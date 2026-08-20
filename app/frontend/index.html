@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NimbusCart</title>
+</head>
+
+<body>
+    <h1>NimbusCart</h1>
+
+    <section>
+        <h2>Add Product</h2>
+
+        <form id="product-form">
+            <label>
+                Name:
+                <input type="text" id="name" required>
+            </label>
+
+            <br><br>
+
+            <label>
+                Price:
+                <input type="number" id="price" min="0" step="0.01" required>
+            </label>
+
+            <br><br>
+
+            <label>
+                Stock:
+                <input type="number" id="stock" min="0" required>
+            </label>
+
+            <br><br>
+
+            <button type="submit">Add Product</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Products</h2>
+
+        <div id="error-message" role="alert" hidden></div>
+
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+
+            <tbody id="products-table-body">
+            </tbody>
+        </table>
+    </section>
+
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:5000";
+
+        const form = document.getElementById("product-form");
+        const tableBody = document.getElementById("products-table-body");
+        const errorMessage = document.getElementById("error-message");
+
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.hidden = false;
+        }
+
+
+        function clearError() {
+            errorMessage.textContent = "";
+            errorMessage.hidden = true;
+        }
+
+
+        async function loadProducts() {
+            clearError();
+
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/api/items`
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to load products.");
+                }
+
+                const products = await response.json();
+
+                tableBody.innerHTML = "";
+
+                products.forEach(product => {
+                    const row = document.createElement("tr");
+
+                    row.innerHTML = `
+                        <td>${product.name}</td>
+                        <td>${product.price.toFixed(2)}</td>
+                        <td>${product.stock}</td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                showError("Unable to load products. Please try again.");
+            }
+        }
+
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            clearError();
+
+            const name = document.getElementById("name").value;
+            const price = Number(
+                document.getElementById("price").value
+            );
+            const stock = Number(
+                document.getElementById("stock").value
+            );
+
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/api/items`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            name: name,
+                            price: price,
+                            stock: stock
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to add product.");
+                }
+
+                form.reset();
+
+                await loadProducts();
+
+            } catch (error) {
+                showError(
+                    "Unable to add product. Please try again."
+                );
+            }
+        });
+
+
+        loadProducts();
+    </script>
+</body>
+</html>
